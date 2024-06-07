@@ -128,11 +128,6 @@
 <!-- SVG element for the bar chart -->
 <svg width="960" height="500"></svg>
 
-<!-- Button to navigate to the homepage -->
-<a href="homepage.html">
-    <button id="home">Homepage</button>
-</a>
-
 <div class="button-container">
     <!-- Dropdown button for year filter -->
     <div class="dropdown">
@@ -155,6 +150,7 @@
     <button id="sort-button">Sort by Total</button>
     <!-- Button to navigate to the dataset page -->
     <button onclick="navigateToDataset()">Doctors and Nurses in Australia</button>
+    <button onclick="navigateToHomepage()">Homepage</button>
 </div>
 
 <!-- Tooltip element for displaying additional information -->
@@ -382,6 +378,10 @@ d3.select("#sort-button").on("click", function() {
 function navigateToDataset() {
     window.location.href = "doctor_nurse_1.html"; // Redirect to the dataset page
 }
+
+function navigateToHomepage() {
+        window.location.href = "homepage.html";
+    }
 </script>
 <p>The column bar chart depicts the yearly distribution of foreign-trained and domestically trained medical professionals from 2012 to 2021. Each year, two bars are displayed side by side, representing the respective numbers of foreign-trained and domestically trained professionals. Hovering over each column reveals an interactive pie chart showcasing the proportion of doctors or nurses based on their training background for that specific year, offering succinct insights into workforce composition trends over time.</p>
 <footer style="margin-top: 20px; text-align: center;">COS30045 Data Visualisation</footer>

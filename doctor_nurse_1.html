@@ -154,11 +154,6 @@
 <!-- SVG element for D3 visualization -->
 <svg width="960" height="500"></svg>
 
-<!-- Button to navigate to the homepage -->
-<a href="homepage.html">
-    <button id="home">Homepage</button>
-</a>
-
 <div class="button-container">
     <div class="dropdown">
         <button id="year-filter">Filter by Year</button>
@@ -179,6 +174,7 @@
     <button id="export-data">Export Data</button>
     <button id="save-chart">Save Chart as Image</button>
     <button onclick="navigateToDataset()">Health workers by Domestic or Foreign trained in Australia</button>
+    <button onclick="navigateToHomepage()">Homepage</button>
 </div>
 
 <!-- Tooltip for displaying additional information -->
@@ -481,6 +477,10 @@
     // Navigation function for dataset button
     function navigateToDataset() {
         window.location.href = "doctor_nurse_2.html";
+    }
+
+    function navigateToHomepage() {
+        window.location.href = "homepage.html";
     }
 </script>
 <p>The stacked bar chart depicts the total number of doctors and nurses from 2012 to 2021. Each bar illustrates the distribution between doctors and nurses, while hovering over a segment displays a donut chart. These donut charts provide a detailed breakdown of the proportions of domestically trained and foreign-trained professionals, offering insights into the composition of the healthcare workforce over the years.</p>
