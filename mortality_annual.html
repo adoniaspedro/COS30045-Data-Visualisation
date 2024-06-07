@@ -1,0 +1,535 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="description" content="Data Visualisation Project"/>
+    <meta name="keywords"    content="HTML, CSS"/>
+    <meta name="author"      content="Adonias Pedro"/>
+
+    <title>Mortality Rate</title>
+
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <style>
+        .line {
+            fill: none;
+            stroke-width: 4px;
+        }
+        /* Style the tooltip */
+        .axis-label {
+            font-size: 20px;
+        }
+        /* Style the grid lines */
+        .grid line {
+            stroke: lightgrey;
+            stroke-opacity: 0.7;
+            shape-rendering: crispEdges;
+        }
+        /* Style the x-axis */
+        .grid path {
+            stroke-width: 0;
+        }
+        /* Style the Buttons */
+        #buttons{
+            position: absolute;
+            margin-left: 400px;
+            z-index: 1;
+            top: 0;
+            left: 0;
+        }
+       /* Style the Legend */ 
+        #legend {
+            position: absolute;
+            right: 0;
+            top: 35%;
+            transform: translateY(-40%);
+            padding: 10px
+        }
+        /* Style the Legend Items */
+        .legend-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: -25px;
+            margin-right: 300px;
+        }
+        /* Style the Legend Colors */
+        .legend-color {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            margin-right: 10px;
+        }
+        /* Style the Filter Buttons */
+        .filter {
+            position: absolute;
+            bottom: -150px;
+            width: 100%;
+            justify-content: flex-start; /* Aligning the buttons to the start (left) of the container */
+            padding-left: 50px; /* Centering the buttons horizontally */
+        }
+        /* Style the Filter Buttons */
+        .filter button {
+            font-size: 11px; /* Adjust the font size */
+            padding: 10px 20px; /* Adjust the padding */
+        }
+        /* Style the 'Sort by Total' Button */
+        #filterr {
+            position: absolute;
+            bottom: -150px;
+            margin-left: 290px;
+            width: 100%;
+            justify-content: flex-end; /* This will align the buttons to the end (right) of the container */
+            padding-right: 50px; /* This will center the buttons horizontally */
+        }
+       
+        .button, #filterButton {
+            font-size: 11px; /* Adjust the font size */
+            padding: 10px 20px; /* Adjust the padding */
+            border-radius: 5px;
+        }
+        #filteryear {
+            position: absolute;
+            bottom: -150px;
+            margin-left: 170px;
+            width: 100%;
+            justify-content: flex-end; /* This will align the buttons to the end (right) of the container */
+            padding-right: 50px; /* This will center the buttons horizontally */
+        }
+        .button, #filteryearButton {
+            font-size: 11px; /* Adjust the font size */
+            padding: 10px 20px; /* Adjust the padding */
+            border-radius: 5px;
+        }
+        /* Style the Dropdown */
+        #dropdown {
+            position: absolute;
+            background-color: #f9f9f9;
+            width: 140px;
+            box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);/* Add shadow to the dropdown */
+            z-index: 1;
+        }
+        /* Style the Dropdown Items */
+        #dropdown label {
+            color: black;
+            padding: 12px 16px;
+            text-decoration: none;
+            display: block;
+        }
+        #dropdownfilteryear {
+            position: absolute;
+            background-color: #f9f9f9;
+            width: 110px;
+            box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
+            z-index: 1;
+        }
+        /* Style the Dropdown Items */
+        #dropdownfilteryear label {
+            color: black;
+            padding: 12px 16px;
+            text-decoration: none;
+            display: block;
+        }
+        /* Style the Saving Image Button */
+        #save{
+            position: absolute;
+            bottom: -150px;
+            margin-left: 430px;
+            width: 15%;
+            height: 6.6%;
+            justify-content: flex-end; 
+            padding-right: 10px; 
+            background-color: #004d66; 
+            color: white;
+            border-radius: 5px;
+        }
+        /* Style the Homepage Button */
+        #home{
+            position: absolute;
+            bottom: -150px;
+            margin-left: 640px;
+            width: 15%;
+            height: 6.6%;
+            justify-content: flex-end; 
+            padding-right: 10px; 
+            background-color: #004d66; 
+            color: white;
+            border-radius: 5px;
+            border-color: black;
+        }
+    </style>
+</head>
+<body>
+
+    <h1 style="text-align: center;">Mortality Rate</h1>
+    <p style="text-align: center">The line graph represents a clear visual of the mortality rates that have occured between 2015 to 2022. 
+        By hovering over the dots on the lines for each country, it will reveal the number of deaths and the year for that country.
+        Its a characteristic feature that makes the graph into a highly engaging tool, allowing you to explore and understand the data in great depth. 
+        It’s a great attribute that not only enhances the graph’s functionality but also provides a more immersive and informative experience for users.
+     </p>
+    
+    <div class="filter">
+        <button id="sort" style="background-color: #004d66; color: white; border-radius: 5px;" >Sort by Total</button>
+    </div>
+    <!-- Dropdown for filter by Year -->
+    <div id="filteryear">
+        <button id="filteryearButton" style="background-color: #004d66; color: white;" >Filter by Year</button>
+        <div id="dropdownfilteryear" style="display: none;">
+            <label><input type="checkbox" value="2015" checked>2015</label>
+            <label><input type="checkbox" value="2016" checked>2016</label>
+            <label><input type="checkbox" value="2017" checked>2017</label>
+            <label><input type="checkbox" value="2018" checked>2018</label>
+            <label><input type="checkbox" value="2019" checked>2019</label>
+            <label><input type="checkbox" value="2020" checked>2020</label>
+            <label><input type="checkbox" value="2021" checked>2021</label>
+            <label><input type="checkbox" value="2022" checked>2022</label>
+        </div>
+    </div>
+    <!-- Dropdown for filter by Country -->
+    <div id="filterr">
+        <button id="filterButton" style="background-color: #004d66; color: white;" >Filter by Country</button>
+        <div id="dropdown" style="display: none;">
+            <label><input type="checkbox" value="Australia" checked>Australia</label>
+            <label><input type="checkbox" value="Lithuania" checked>Lithuania</label>
+            <label><input type="checkbox" value="France" checked>France</label>
+            <label><input type="checkbox" value="United States" checked>United States</label>
+        </div>
+    </div>
+
+    <button id="save">Save Chart as Image</button>
+    
+    <!-- Button to navigate to the homepage -->
+    <a href="homepage.html">
+        <button id="home">Homepage</button>
+    </a>
+    
+    <!-- Legend for the graph -->
+    <div id="legend">
+        <div class="legend-item">
+            <span class="legend-color" style="background-color: #008100;"></span>
+            <p>Australia</p>
+        </div>
+        <div class="legend-item">
+            <span class="legend-color" style="background-color: #ff7f0e;"></span>
+            <p>Lithuania</p>
+        </div>
+        <div class="legend-item">
+            <span class="legend-color" style="background-color: #c81025;"></span>
+            <p>France</p>
+        </div>
+        <div class="legend-item">
+            <span class="legend-color" style="background-color: #4682b4;"></span>
+            <p>United States</p>
+        </div>
+    </div>
+
+    <!-- SVG Canvas for the line graph -->
+    <svg width="1000" height="600" style="margin-top: 50px;"></svg> 
+    <!-- Tooltip for the dots on the lines -->   
+    <div id="tooltip" style="position: absolute; opacity: 0;"></div>
+
+    <script>
+        // Function to save the chart as an image
+        function saveChartAsImage() {
+            // Select the SVG element
+            var svgElement = document.querySelector('svg');
+
+            // Change the background color to white
+            svgElement.style.backgroundColor = 'white';
+
+            // Get the SVG XML
+            var serializer = new XMLSerializer();
+            var svgString = serializer.serializeToString(svgElement);
+
+            // Convert SVG to base64
+            var image = new Image();
+            image.src = 'data:image/svg+xml;base64,' + window.btoa(svgString);
+
+            // Create a canvas element
+            var canvas = document.createElement('canvas');
+            var context = canvas.getContext('2d');
+
+            // Draw the image onto the canvas
+            image.onload = function() {
+                canvas.width = image.width;
+                canvas.height = image.height;
+                context.drawImage(image, 0, 0);
+
+                // Convert canvas to data URL
+                var dataURL = canvas.toDataURL('image/png');
+
+                // Create a link element and trigger download
+                var link = document.createElement('a');
+                link.href = dataURL;
+                link.download = 'LineGraph.png';
+                link.click();
+            };
+        }
+
+        //Loading the  the CSV file
+        d3.csv("mortality_rate_dataset1.csv").then(function(data) {
+            //Convert strings to numbers
+            var countries = ["Australia", "Lithuania", "France", "United States"];
+            data.forEach(function(d) {
+                countries.forEach(function(country) {
+                    d[country] = +d[country];
+                });
+            });
+            // Event listener for the 'save chart as image' button
+            document.getElementById('save').addEventListener('click', saveChartAsImage);
+    
+            //Set up margins and dimensions
+            var margin = {top: 20, right: 110, bottom: 150, left: 55};
+            var width = 800 - margin.left - margin.right;
+            var expandedWidth = width + 200;
+            var height = 500 - margin.top - margin.bottom;
+    
+            //Append SVG to the body
+            var svg = d3.select("svg")
+                .attr("width", expandedWidth + margin.left + margin.right)
+                .attr("height", height + margin.top + margin.bottom)
+                .append("g")
+                .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+            
+            //Creating a linear scale for the x-axis
+            var xScale = d3.scaleBand()
+                .domain(data.map(function(d) { return d["Year"]; }))
+                .range([0, width])
+                .paddingInner(0.97) // Space between bands
+                .paddingOuter(0); // Space before the first band and after the last band
+    
+            //Finding the maximum value in the dataset
+            var maxVal = d3.max(data, function(d) {
+                return d3.max(countries, function(country) {
+                    return d[country];
+                });
+            });
+    
+            //Creating a linear scale for the y-axis
+            var yScale = d3.scaleLinear()
+                .domain([0, maxVal]) //Setting the domain of the y-axis
+                .range([height, 0]); //Setting the range of the y-axis
+    
+            //Create and append the x-axes
+            var xAxis = d3.axisBottom(xScale)
+            
+            //Rotate the x-axis labels
+            svg.append("g")
+                .attr("class", "x axis") // Add class for selection
+                .attr("transform", "translate(0," + height + ")") //Moving the x-axis to the bottom of the graph
+                .call(xAxis)
+                .selectAll("text")
+                .style("text-anchor", "end")
+                .style("font-size", "10.5px")
+                .attr("dx", "-.8em")
+                .attr("dy", ".15em")
+                .attr("transform", "rotate(-65)"); //Rotating the x-axis labels
+            
+            //Create and append the y-axes
+            var yAxis = d3.axisLeft(yScale)
+                .tickSize(-width);//Creating the vertical grid lines
+            
+            //Append the y-axes to the SVG
+            svg.append("g")
+                .attr("class", "grid") // Adding class for selection
+                .call(yAxis);
+    
+            //Create and append the line
+            var line = d3.line()
+                .x(function(d) { return xScale(d.Year) + xScale.bandwidth() / 2; }) // Adjusting the x position of the line
+                .y(function(d) { return yScale(d.Value); }); // Adjusting the y position of the line
+    
+            //Defining the colors for each line 
+            var colors = d3.scaleOrdinal()
+                .domain(["Australia", "Lithuania", "France", "United States"])
+                .range(["#008100", "#ff7f0e", "#c81025", "#4682b4"]); //Setting the colours for the lines
+    
+            // Function to update the lines and dots based on the selected years
+            function updateLinesAndDots(checkedYears) {
+                // Filtered data based on the checked years
+                var filteredData = data.filter(d => checkedYears.includes(d.Year));
+    
+                // Update x-axis
+                xScale.domain(checkedYears);
+                svg.select(".x.axis").call(xAxis);
+    
+                // Remove existing lines and dots
+                svg.selectAll('.line').remove();  // Added line to remove existing lines
+                svg.selectAll('circle').remove();  // Added line to remove existing dots
+    
+                // Creating a line for each country in the graph
+                countries.forEach(function(country, i) {
+                    var lineGenerator = line.y(function(d) { return yScale(d[country]); });
+                    svg.append("path")
+                        .datum(filteredData)
+                        .attr("class", "line line-" + country) // Add a unique class for each country line
+                        .attr("data-country", country) // Add a data attribute for each country
+                        .attr("fill", "none")
+                        .attr("stroke", colors(country)) //Matching the colour of the lines with the dots
+                        .attr("stroke-width", 4)
+                        .attr("d", lineGenerator);
+                });
+                
+                //Function to sort the years and update the graph
+                function updateGraphWithSortedData(sortedData) {
+                    // Select all lines and bind the sorted data to them
+                    var lines = d3.selectAll('.line')
+                        .data(sortedData);
+                
+                    // Update existing lines
+                    lines
+                        .transition() // Start a transition to animate the changes
+                        .duration(1000) // Set the duration of the transition
+                        .attr('d', line); // Update the 'd' attribute of the lines with the new data
+                
+                    // Add new lines
+                    lines.enter().append('path')
+                        .attr('class', 'line')
+                        .attr('d', line);
+                
+                    //Removing the old lines
+                    lines.exit().remove();
+                }
+    
+                //Making points on the line for each country with mouseover events
+                countries.forEach(function(country, i){
+                    svg.selectAll(".dot" + country) //Adding country to the class to create unique classes for each country
+                    .data(filteredData) //Binding the data to the dots
+                        .enter().append("circle")
+                        .attr("class", "dot" + country.replace(/\s/g, '')) //Adding country to the class to create unique classes for each country
+                        .attr("cx", function(d) { return xScale(d["Year"]) + xScale.bandwidth() / 2; })
+                        .attr("cy", function(d) { return yScale(d[country]); }) // Use d[country] here
+                        .attr("r", 5)
+                        .attr("fill", colors(i)) //Matching the colour of the dots with the line
+                        .attr("data-year", function(d) { return d["Year"]; })
+                        .on("mouseover", function(event, d) {
+                            d3.select(this)
+                                .attr("fill", "orange");
+                            
+                            //Tooltip for the dots on the lines 
+                            tooltip.style("opacity", 1)
+                                .html("Number of Deaths: " + d[country] + "<br/>" +"Year: " + d["Year"])
+                                .style("left", (event.pageX + 10) + "px")
+                                .style("top", (event.pageY - 10) + "px");
+                        })
+                        //Mouseout event for the dots on the lines
+                        .on("mousemove", function(event, d) {
+                            tooltip.style("left", (event.pageX + 10) + "px")
+                                .style("top", (event.pageY - 10) + "px");
+                        })
+                        //Mouseout event for the dots on the lines for the dot to become orange
+                        .on("mouseout", function(event, d) {
+                            d3.select(this)
+                                .attr("fill", colors(i));//Reseting the colour of the dot
+                            //Hiding the tooltip
+                            tooltip.style("opacity", 0)
+                                .style("border", "1px solid orange"); //Setting the border of the tooltip
+                        });
+                });
+            }
+    
+            //Adding Label to the y-axis
+            svg.append("text")
+                .attr("class", "axis-label")
+                .attr("transform", "rotate(-90)") //Rotating the text to be vertical
+                .attr("y", -5 - margin.left)
+                .attr("x", 0 - (height / 2))
+                .attr("dy", "1em")
+                .style("text-anchor", "middle")
+                .text("Number of Deaths");
+    
+            //Adding Label to the x-axis    
+            svg.append("text")
+                .attr("class", "axis-label")
+                .attr("transform", "translate(" + (width / 2) + " ," + (height + margin.top + 45) + ")") //Moving the text to the center of the x-axis
+                .style("text-anchor", "middle")
+                .text("Year");
+    
+            // Creating a legend for the graph
+            var tooltip = d3.select("#tooltip")
+                .style("background-color", "white")
+                .style("padding", "5px")
+                .style("border", "1px solid black")
+                .style("border-radius", "5px");
+    
+            // Event listener for the 'filter by country' button
+            document.getElementById('filterButton').addEventListener('click', function() {
+                // Show or hide the dropdown
+                var dropdown = document.getElementById('dropdown');
+                dropdown.style.display = dropdown.style.display === 'none' ? 'block' : 'none';//Toggle the display
+            });
+    
+            // Event listener for the 'filter by year' button
+            document.getElementById('filteryearButton').addEventListener('click', function() {
+                // Show or hide the dropdown
+                var dropdown = document.getElementById('dropdownfilteryear');
+                dropdown.style.display = dropdown.style.display === 'none' ? 'block' : 'none';//Toggle the display
+            });
+
+            // Flag to track the sort order
+            let ascending = false;
+
+            // Event listener for the 'sort by year' button
+            document.getElementById('sort').addEventListener('click', function() {
+                // Sort the data
+                data.sort(function(a, b) {
+                    // Sort the data based on the year
+                    return ascending ? (+a.Year) - (+b.Year) : (+b.Year) - (+a.Year);
+                });
+
+                //Update the graph with the sorted data
+                var checkedYears = data.map(d => d.Year);
+                updateLinesAndDots(checkedYears);
+
+                //Flip the flag for the next click
+                ascending = !ascending;
+            });
+
+            //Filtering the countries based on the dropdown selection    
+            var dropdown = document.getElementById('dropdown');
+            dropdown.addEventListener('change', function() {
+                // Getting the selected countries
+                var selectedCountries = Array.from(dropdown.selectedOptions).map(option => option.value);
+                d3.selectAll('.line').each(function() {
+                    var line = d3.select(this); //Selecting the line
+                    var country = line.attr('class').split(' ')[1]; //Getting the country from the class
+                    line.style('display', selectedCountries.includes(country) ? 'block' : 'none'); //Show or hide the line
+                    });
+                });
+    
+            // Filtering the countries based on the checkbox selection    
+            var checkboxes = document.querySelectorAll('#dropdown input[type="checkbox"]');
+            checkboxes.forEach(function(checkbox) {
+                checkbox.addEventListener('change', function() {
+                    var country = this.value;
+                    var line = d3.selectAll('.line').filter(function() {
+                        return d3.select(this).attr('data-country') === country; //Select the line for this country
+                    });
+                    line.style('visibility', this.checked ? 'visible' : 'hidden'); //Show or hide the line
+    
+                    var dots = d3.selectAll('.dot' + country.replace(/\s/g, ''));
+                    dots.style('visibility', this.checked ? 'visible' : 'hidden'); //Show or hide the dots
+                });
+            });
+    
+            // Filtering the years based on the checkbox selection
+            var yearCheckboxes = document.querySelectorAll('#dropdownfilteryear input[type=checkbox]');
+            yearCheckboxes.forEach(function(checkbox) {
+                checkbox.addEventListener('change', function() {
+                    // Get all the checked years
+                    var checkedYears = Array.from(yearCheckboxes)
+                        .filter(input => input.checked) //Filter the checked years
+                        .map(input => input.value); //Geting the value of the checked years
+    
+                    updateLinesAndDots(checkedYears); //Updated to call the new function
+                });
+            });
+    
+            // Initialize with all years checked
+            var checkedYears = data.map(d => d.Year); // Added initialization for all years
+            updateLinesAndDots(checkedYears); // Added initial call to update lines and dots
+        });
+    </script>
+    
+
+    <footer style="margin-top: 330px; text-align: center;">COS30045 Data Visualisation</footer>
+</body>
+</html>

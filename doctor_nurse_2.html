@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="description" content="Data Visualisation"/>
+    <meta name="keywords" content="HTML, CSS, Javascript, D3"/>
+    <meta name="author" content="Puladitha Silva"/>
+    <title>Doctors and Nurses in Australia by where they trained</title>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <style>
+        /* Basic styling for body and text */
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            font-family: Arial, sans-serif;
+        }
+        /* Styling for bar elements in the chart */
+        .bar {
+            stroke: white;
+            stroke-width: 1px;
+        }
+        .bar:hover {
+            fill: orange;
+        }
+        /* Styling for axis text and lines */
+        .axis text {
+            font: 10px sans-serif;
+        }
+        .axis path,
+        .axis line {
+            fill: none;
+            shape-rendering: crispEdges;
+        }
+        /* Styling for legend elements */
+        .legend rect {
+            stroke-width: 2;
+            cursor: pointer;
+        }
+        .legend rect.active {
+            stroke: black;
+            stroke-width: 2px;
+        }
+        /* Styling for tooltip */
+        .tooltip {
+            position: absolute;
+            text-align: center;
+            width: auto;
+            height: auto;
+            pointer-events: none;
+            background: white;
+            border: 1px solid #ccc;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            padding: 5px;
+            border-radius: 5px;
+        }
+        /* Additional styling for tooltip text */
+        .tooltip .legend {
+            font-size: 12px;
+            text-anchor: start;
+        }
+        .tooltip .legend text {
+            font-size: 12px;
+        }
+        /* Styling for button container and buttons */
+        .button-container {
+            margin-top: 20px;
+        }
+        .button-container button {
+            margin-right: 10px;
+            padding: 10px;
+            font-size: 14px;
+            cursor: pointer;
+            background-color: #004d66;
+            color: white;
+            border: none;
+            border-radius: 5px;
+        }
+        /* Styling for dropdown and checkbox group */
+        .filter-container {
+            margin-bottom: 20px;
+        }
+        .dropdown {
+            display: inline-block;
+            position: relative;
+        }
+        .dropdown-content {
+            display: none;
+            position: absolute;
+            background-color: white;
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+            padding: 12px 16px;
+            z-index: 1;
+        }
+        .dropdown:hover .dropdown-content {
+            display: block;
+        }
+        .checkbox-group label {
+            display: block;
+        }
+        p {
+            margin-left: 10%;
+            margin-right: 10%;
+        }
+        /* Style the Homepage Button */
+        #home{
+            position: absolute;
+            bottom: 10px;
+            margin-left: 400px;
+            width: 15%;
+            height: 6.6%;
+            justify-content: flex-end; 
+            padding-right: 10px; 
+            background-color: white; 
+            color: black;
+            border-radius: 5px;
+            border-color: black;
+        }
+    </style>
+</head>
+
+<body>
+
+<h1>Doctors and Nurses in Australia by where they trained</h1>
+
+<!-- SVG element for the bar chart -->
+<svg width="960" height="500"></svg>
+
+<div class="button-container">
+    <!-- Dropdown button for year filter -->
+    <div class="dropdown">
+        <button id="year-filter">Filter by Year</button>
+        <div class="dropdown-content checkbox-group">
+            <!-- Year filter checkboxes -->
+            <label><input type="checkbox" class="year-filter" value="2012" checked> 2012</label>
+            <label><input type="checkbox" class="year-filter" value="2013" checked> 2013</label>
+            <label><input type="checkbox" class="year-filter" value="2014" checked> 2014</label>
+            <label><input type="checkbox" class="year-filter" value="2015" checked> 2015</label>
+            <label><input type="checkbox" class="year-filter" value="2016" checked> 2016</label>
+            <label><input type="checkbox" class="year-filter" value="2017" checked> 2017</label>
+            <label><input type="checkbox" class="year-filter" value="2018" checked> 2018</label>
+            <label><input type="checkbox" class="year-filter" value="2019" checked> 2019</label>
+            <label><input type="checkbox" class="year-filter" value="2020" checked> 2020</label>
+            <label><input type="checkbox" class="year-filter" value="2021" checked> 2021</label>
+        </div>
+    </div>
+    <!-- Button to sort the data by total -->
+    <button id="sort-button">Sort by Total</button>
+    <!-- Button to navigate to the dataset page -->
+    <button onclick="navigateToDataset()">Doctors and Nurses in Australia</button>
+    <button onclick="navigateToHomepage()">Homepage</button>
+</div>
+
+<!-- Tooltip element for displaying additional information -->
+<div id="tooltip" class="tooltip" style="display: none;">
+    <svg width="250" height="250"></svg>
+</div>
+
+<script>
+    // Define margin, width, and height for the chart
+    const svg = d3.select("svg"),
+        margin = { top: 20, right: 200, bottom: 50, left: 80 },
+        width = +svg.attr("width") - margin.left - margin.right,
+        height = +svg.attr("height") - margin.top - margin.bottom;
+
+    // Define scales for the axes and color palettes
+    const x0 = d3.scaleBand().rangeRound([0, width]).paddingInner(0.1);
+    const x1 = d3.scaleBand().padding(0.05);
+    const y = d3.scaleLinear().rangeRound([height, 0]);
+    const color = d3.scaleOrdinal().range(["#003f5c", "#58508d"]); // Color palette for bar chart
+    const donutColor = d3.scaleOrdinal(["#bc5090", "#ff6361", "#ffa600", "#58508d", "#003f5c"]); // Color palette for pie chart
+
+    // Append a group element to the SVG for the chart
+    const g = svg.append("g").attr("transform", `translate(${margin.left},${margin.top})`);
+
+    let dataGlobal; // Variable to store the global data
+    let sortOrder = false; // Variable to track sorting order
+
+    // Load the CSV data
+    d3.csv("doctor_nurse_data.csv").then(data => {
+        dataGlobal = data; // Store the loaded data in the global variable
+        const keys = ["Domestically-trained", "Foreign-trained"]; // Keys for data aggregation
+        const domesticallyTrainedKeys = ["Domestically-trained doctors", "Domestically-trained nurses"];
+        const foreignTrainedKeys = ["Foreign-trained doctors", "Foreign-trained nurses"];
+
+        // Aggregate data for domestically and foreign-trained individuals
+        data.forEach(d => {
+            d["Domestically-trained"] = domesticallyTrainedKeys.reduce((sum, key) => sum + (+d[key]), 0);
+            d["Foreign-trained"] = foreignTrainedKeys.reduce((sum, key) => sum + (+d[key]), 0);
+        });
+
+        // Set domains for the scales
+        x0.domain(data.map(d => d.Years));
+        x1.domain(keys).rangeRound([0, x0.bandwidth()]);
+        y.domain([0, d3.max(data, d => d3.max(keys, key => d[key]))]).nice();
+
+        // Append x-axis to the chart
+        g.append("g")
+            .attr("class", "axis axis--x")
+            .attr("transform", `translate(0,${height})`)
+            .call(d3.axisBottom(x0))
+            .append("text")
+            .attr("x", width / 2)
+            .attr("y", margin.bottom - 10)
+            .attr("fill", "#000")
+            .attr("font-weight", "bold")
+            .attr("text-anchor", "middle")
+            .text("Years");
+
+        // Append y-axis to the chart
+        g.append("g")
+            .attr("class", "axis axis--y")
+            .call(d3.axisLeft(y).ticks(10).tickFormat(d3.format("d")))
+            .append("text")
+            .attr("transform", "rotate(-90)")
+            .attr("x", -height / 2)
+            .attr("y", -margin.left + 20)
+            .attr("dy", "0.71em")
+            .attr("fill", "#000")
+            .attr("font-weight", "bold")
+            .attr("text-anchor", "middle")
+            .text("Number of Individuals");
+
+        // Add legend to the chart
+        const legend = g.append("g")
+            .attr("font-family", "sans-serif")
+            .attr("font-size", 10)
+            .attr("text-anchor", "end")
+            .selectAll("g")
+            .data(keys.slice().reverse())
+            .enter().append("g")
+            .attr("transform", (d, i) => `translate(0,${i * 20})`);
+
+        legend.append("rect")
+    .attr("x", width + 140) // Set the x position of the legend rectangles
+    .attr("width", 19) // Set the width of the legend rectangles
+    .attr("height", 19) // Set the height of the legend rectangles
+    .attr("fill", color); // Set the fill color of the legend rectangles based on the color scale
+
+legend.append("text")
+    .attr("x", width + 135) // Set the x position of the legend text
+    .attr("y", 9.5) // Set the y position of the legend text
+    .attr("dy", "0.32em") // Adjust the position of the text
+    .text(d => d); // Set the text of the legend to the corresponding key
+
+// Function to render the bar chart
+renderBars(data);
+
+// Tooltip setup
+const tooltip = d3.select("#tooltip"); // Select the tooltip element
+const pie = d3.pie().sort(null).value(d => d.value); // Setup the pie chart layout
+const arc = d3.arc().outerRadius(80).innerRadius(0); // Setup the arc generator for the pie chart
+
+// Function to show tooltip with pie chart
+function showTooltip(event, d, key) {
+    const pieData = (key === "Domestically-trained") ? domesticallyTrainedKeys : foreignTrainedKeys; // Determine which data to show in the pie chart
+    const pieValues = pieData.map(k => ({ key: k, value: d.data[k] })); // Map the data to the pie chart format
+    const arcs = pie(pieValues); // Compute the pie chart arcs
+
+    const tooltipSvg = tooltip.select("svg"); // Select the SVG element inside the tooltip
+    tooltipSvg.selectAll("*").remove(); // Clear any existing content
+
+    const g = tooltipSvg.append("g")
+        .attr("transform", `translate(125, 100)`); // Create a group element for the pie chart and center it
+
+    g.selectAll("path")
+        .data(arcs) // Bind the arc data to the path elements
+        .enter().append("path") // Create path elements
+        .attr("d", arc) // Define the arc shape
+        .attr("fill", d => donutColor(d.data.key)); // Set the fill color of the arcs
+
+    g.selectAll("text")
+        .data(arcs) // Bind the arc data to the text elements
+        .enter().append("text") // Create text elements
+        .attr("transform", d => `translate(${arc.centroid(d)})`) // Position the text in the center of each arc
+        .attr("dy", "0.35em") // Adjust the vertical alignment
+        .attr("text-anchor", "middle") // Center the text
+        .text(d => `${Math.round(d.data.value / d3.sum(pieValues.map(p => p.value)) * 100)}%`); // Display the percentage
+
+    const legendG = tooltipSvg.append("g")
+        .attr("transform", `translate(10, 200)`); // Create a group element for the pie chart legend
+
+    const legend = legendG.selectAll(".legend")
+        .data(arcs) // Bind the arc data to the legend elements
+        .enter().append("g")
+        .attr("class", "legend")
+        .attr("transform", (d, i) => `translate(0, ${i * 20})`); // Position each legend item
+
+    legend.append("rect")
+        .attr("x", 0) // Set the x position of the legend rectangles
+        .attr("y", 0) // Set the y position of the legend rectangles
+        .attr("width", 10) // Set the width of the legend rectangles
+        .attr("height", 10) // Set the height of the legend rectangles
+        .attr("fill", d => donutColor(d.data.key)); // Set the fill color of the legend rectangles
+
+    legend.append("text")
+        .attr("x", 15) // Set the x position of the legend text
+        .attr("y", 5) // Set the y position of the legend text
+        .attr("dy", "0.35em") // Adjust the vertical alignment of the text
+        .text(d => `${d.data.key}: ${d.data.value}`); // Display the legend text
+
+    tooltip.style("display", "block") // Show the tooltip
+        .style("left", (event.pageX + 15) + "px") // Position the tooltip based on mouse coordinates
+        .style("top", (event.pageY - 15) + "px"); // Adjust the tooltip position
+}
+
+// Function to hide the tooltip
+function hideTooltip() {
+    tooltip.style("display", "none"); // Hide the tooltip
+}
+
+// Function to render bars in the chart
+function renderBars(data) {
+    x0.domain(data.map(d => d.Years)); // Set the x0 domain to the years in the data
+    y.domain([0, d3.max(data, d => d3.max(keys, key => d[key]))]).nice(); // Set the y domain to the max value in the data
+
+    g.select(".axis--x").call(d3.axisBottom(x0)); // Update the x-axis
+    g.select(".axis--y").call(d3.axisLeft(y).ticks(10).tickFormat(d3.format("d"))); // Update the y-axis
+
+    const bars = g.selectAll(".bar-group").data(data, d => d.Years); // Bind data to bar groups
+
+    const barsEnter = bars.enter().append("g")
+        .attr("class", "bar-group")
+        .attr("transform", d => `translate(${x0(d.Years)},0)`); // Position each bar group
+
+    barsEnter.merge(bars)
+        .transition()
+        .duration(750)
+        .attr("transform", d => `translate(${x0(d.Years)},0)`); // Update bar positions
+
+    const rects = barsEnter.selectAll("rect")
+        .data(d => keys.map(key => ({ key, value: d[key], data: d }))) // Bind data to rect elements
+        .enter().append("rect")
+        .attr("class", "bar")
+        .attr("x", d => x1(d.key)) // Set the x position of the bars
+        .attr("y", height) // Initially position the bars at the bottom
+        .attr("width", x1.bandwidth()) // Set the bar width
+        .attr("height", 0) // Initially set the bar height to 0
+        .attr("fill", d => color(d.key)) // Set the bar color
+        .on("mouseover", function(event, d) { showTooltip(event, d, d.key); }) // Show tooltip on mouseover
+        .on("mousemove", function(event, d) { tooltip.style("left", (event.pageX + 15) + "px").style("top", (event.pageY - 15) + "px"); }) // Move tooltip with mouse
+        .on("mouseout", hideTooltip); // Hide tooltip on mouseout
+
+    barsEnter.merge(bars).selectAll("rect")
+        .transition()
+        .duration(750)
+        .attr("y", d => y(d.value)) // Update the y position of the bars
+        .attr("height", d => height - y(d.value)); // Update the height of the bars
+
+    bars.exit().remove(); // Remove bars that are no longer needed
+}
+
+// Event listener for year filter checkboxes
+d3.selectAll(".year-filter").on("change", function() {
+    const selectedYears = [];
+    d3.selectAll(".year-filter:checked").each(function() {
+        selectedYears.push(this.value); // Collect selected years
+    });
+    const filteredData = dataGlobal.filter(d => selectedYears.includes(d.Years)); // Filter data based on selected years
+    renderBars(filteredData); // Re-render the bars with the filtered data
+});
+
+// Event listener for sort button
+d3.select("#sort-button").on("click", function() {
+    sortOrder = !sortOrder; // Toggle sort order
+    const sortedData = dataGlobal.slice().sort((a, b) => {
+        const totalA = a["Domestically-trained"] + a["Foreign-trained"]; // Calculate total for a
+        const totalB = b["Domestically-trained"] + b["Foreign-trained"]; // Calculate total for b
+        return sortOrder ? totalB - totalA : totalA - totalB; // Sort data based on total
+    });
+    renderBars(sortedData); // Re-render the bars with the sorted data
+});
+});
+
+// Function to navigate to dataset page
+function navigateToDataset() {
+    window.location.href = "doctor_nurse_1.html"; // Redirect to the dataset page
+}
+
+function navigateToHomepage() {
+        window.location.href = "homepage.html";
+    }
+</script>
+<p>The column bar chart depicts the yearly distribution of foreign-trained and domestically trained medical professionals from 2012 to 2021. Each year, two bars are displayed side by side, representing the respective numbers of foreign-trained and domestically trained professionals. Hovering over each column reveals an interactive pie chart showcasing the proportion of doctors or nurses based on their training background for that specific year, offering succinct insights into workforce composition trends over time.</p>
+<footer style="margin-top: 20px; text-align: center;">COS30045 Data Visualisation</footer>
+</body>
+</html>
+
