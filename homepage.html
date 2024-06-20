@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="description" content="Data Visualisation Project"/>
+    <meta name="keywords"    content="HTML, CSS"/>
+    <meta name="author"      content="Puladitha Silva, Adonias Pedro & Devaraathe Bala"/>
+
+    <title>Health Workforce Migration</title>
+
+    <style>
+        h1{
+            text-align: center;
+        }
+        h3{
+            text-align: center;
+            margin-top: 10px;
+        }
+        /* Styling the container for the squares */
+        .container {
+            display: flex;
+            justify-content: space-around;
+            margin-top: 80px;
+        }
+        /* Styling the squares */
+        .square {
+            width: 250px;
+            height: 250px;
+            background-color: transparent; /* Make the background transparent */
+            border: 2px solid #000;
+            border-color: #004d66;
+            border-radius: 10px;
+            transition: transform 0.3s ease; /* Animating the transform property */
+            
+        }
+        /* Hover effect for the squares */
+        .square:hover {
+            transform: scale(1.1); /* Scale the square up to 110% of its original size */
+            box-shadow: 0px 0px 10px black; /* Add a shadow */
+        }
+        /* Styling the square container */
+        .square-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        /* Styling the first Square */
+        .square1 {
+            background-image: url('Chart1.png');
+            background-size: cover; /* covering the entire square */
+        }
+        /* Styling the second Square */
+        .square2 {
+            background-image: url('Chart2.png');
+            background-size: cover; /* covering the entire square */
+        }
+        p {
+            text-align: center;
+            margin-top: 10px;
+        }
+        footer{
+            margin-top: 50px;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- The Headings -->
+    <!--<h1>Data Visualisation - COS30045</h1>-->
+    <h1>Health Workforce Migration - COS30045</h1>
+    <h3>Puladitha Silva, 104187884 </h3>
+    <h3>Adonias Pedro, 104463681</h3>
+    <h3>Devaraathe Bala, 103957015 </h3>
+
+    <!-- The paragraph for the data visualisation-->
+    <p>The webpage lets users to understand domestic and international connections in the form of human capital. 
+        These visualizations aim to show the impact of healthcare policies, economic changes, or public health interventions. 
+
+        A well-designed visualization of mortality rates and the number of doctors can offer critical insights into healthcare effectiveness, 
+        highlight areas in need of resources, and guide policy decisions. 
+        It helps stakeholders quickly grasp complex data relationships and make informed decisions to improve public health outcomes.</p>
+
+    <!-- The Squares -->    
+    <div class="container">
+        <div class="square-container">
+            <a href="doctor_nurse_1.html">
+                <div class="square square1"></div>
+            </a>
+            <p>Doctors and Nurses in Australias Graph</p>
+        </div>
+        <div class="square-container">
+            <a href="mortality_annual.html">
+                <div class="square square2"></div>
+            </a>
+            <p>Mortality Rate Graph</p>
+        </div>
+    </div>
+
+    <script>
+       
+    </script>
+    <footer style="margin-top: 20px; text-align: center;">COS30045 Data Visualisation</footer>
+</body>
+</html>

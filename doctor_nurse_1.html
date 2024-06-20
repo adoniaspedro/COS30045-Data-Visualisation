@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="description" content="Data Visualisation"/>
+    <meta name="keywords" content="HTML, CSS, Javascript, D3"/>
+    <meta name="author" content="Puladitha Silva"/>
+    <title>Doctors and Nurses in Australia</title>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <style>
+        /* Global styles */
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            font-family: Arial, sans-serif;
+        }
+
+        svg {
+            margin-top: 20px;
+        }
+
+        .bar {
+            stroke: white;
+            stroke-width: 1px;
+        }
+
+        .bar:hover {
+            fill: orange;
+        }
+
+        .axis text {
+            font: 10px sans-serif;
+        }
+
+        .axis path,
+        .axis line {
+            fill: none;
+            shape-rendering: crispEdges;
+        }
+
+        .legend rect {
+            stroke-width: 2;
+            cursor: pointer;
+        }
+
+        .legend rect.active {
+            stroke: black;
+            stroke-width: 2px;
+        }
+
+        .tooltip {
+            position: absolute;
+            text-align: center;
+            width: auto;
+            height: auto;
+            pointer-events: none;
+            background: white;
+            border: 1px solid #ccc;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            padding: 5px;
+            border-radius: 5px;
+        }
+
+        .tooltip .legend {
+            font-size: 12px;
+            text-anchor: start;
+        }
+
+        .tooltip .legend text {
+            font-size: 12px;
+        }
+
+        /* Button container styles */
+        .button-container {
+            margin-top: 20px;
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .button-container button,
+        .button-container .dropdown button {
+            margin: 5px;
+            padding: 10px 15px;
+            font-size: 14px;
+            cursor: pointer;
+            border: none;
+            border-radius: 5px;
+            background-color: #004d66; /* Dark teal */
+            color: white;
+            transition: background-color 0.3s;
+        }
+
+        .button-container button:hover,
+        .button-container .dropdown button:hover {
+            background-color: #00384d; /* Darker teal */
+        }
+
+        .filter-container {
+            margin-bottom: 20px;
+        }
+
+        .dropdown {
+            display: inline-block;
+            position: relative;
+        }
+
+        .dropdown-content {
+            display: none;
+            position: absolute;
+            background-color: white;
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+            padding: 12px 16px;
+            z-index: 1;
+            border-radius: 5px;
+            margin-top: 5px;
+        }
+
+        .dropdown:hover .dropdown-content {
+            display: block;
+        }
+
+        .checkbox-group label {
+            display: block;
+        }
+
+        p {
+            margin-left: 10%;
+            margin-right: 10%;
+        }
+        /* Style the Homepage Button */
+        #home{
+            position: absolute;
+            bottom: 5px;
+            margin-left: 400px;
+            width: 15%;
+            height: 6.6%;
+            justify-content: flex-end; 
+            padding-right: 10px; 
+            background-color: white; 
+            color: black;
+            border-radius: 5px;
+            border-color: black;
+        }
+    </style>
+</head>
+<body>
+
+<h1>Doctors and Nurses in Australia</h1>
+
+<!-- SVG element for D3 visualization -->
+<svg width="960" height="500"></svg>
+
+<div class="button-container">
+    <div class="dropdown">
+        <button id="year-filter">Filter by Year</button>
+        <div class="dropdown-content checkbox-group">
+            <label><input type="checkbox" class="year-filter" value="2012" checked> 2012</label>
+            <label><input type="checkbox" class="year-filter" value="2013" checked> 2013</label>
+            <label><input type="checkbox" class="year-filter" value="2014" checked> 2014</label>
+            <label><input type="checkbox" class="year-filter" value="2015" checked> 2015</label>
+            <label><input type="checkbox" class="year-filter" value="2016" checked> 2016</label>
+            <label><input type="checkbox" class="year-filter" value="2017" checked> 2017</label>
+            <label><input type="checkbox" class="year-filter" value="2018" checked> 2018</label>
+            <label><input type="checkbox" class="year-filter" value="2019" checked> 2019</label>
+            <label><input type="checkbox" class="year-filter" value="2020" checked> 2020</label>
+            <label><input type="checkbox" class="year-filter" value="2021" checked> 2021</label>
+        </div>
+    </div>
+    <button id="sort-total">Sort by Total</button>
+    <button id="export-data">Export Data</button>
+    <button id="save-chart">Save Chart as Image</button>
+    <button onclick="navigateToDataset()">Health workers by Domestic or Foreign trained in Australia</button>
+    <button onclick="navigateToHomepage()">Homepage</button>
+</div>
+
+<!-- Tooltip for displaying additional information -->
+<div id="tooltip" class="tooltip" style="display: none;">
+    <svg width="250" height="250"></svg>
+</div>
+
+<script>
+    // D3 margin convention
+    const svg = d3.select("svg"),
+        margin = { top: 20, right: 200, bottom: 50, left: 80 },
+        width = +svg.attr("width") - margin.left - margin.right,
+        height = +svg.attr("height") - margin.top - margin.bottom;
+
+    // Scales for the bar chart
+    const x = d3.scaleBand()
+        .rangeRound([0, width])
+        .paddingInner(0.2)
+        .paddingOuter(0.3)
+        .align(0.1);
+
+    const y = d3.scaleLinear()
+        .rangeRound([height, 0]);
+
+    const color = d3.scaleOrdinal()
+        .range(["#2b6c96", "#1d4d71"]);  // Darker blue tones
+
+    // Main group element for the chart
+    const g = svg.append("g")
+        .attr("transform", `translate(${margin.left},${margin.top})`);
+
+    let dataGlobal;  // Global variable to store the loaded data
+    let ascending = true;  // Flag for sorting order
+    let activeKeys = ["Total of doctors", "Total of nurses"];  // Active data series
+
+    // Load the CSV data
+    d3.csv("doctor_nurse_data.csv").then(data => {
+        dataGlobal = data;  // Save the data globally
+        const keys = ["Total of doctors", "Total of nurses"];
+        const nurseKeys = ["Domestically-trained nurses", "Foreign-trained nurses"];
+        const doctorKeys = ["Domestically-trained doctors", "Foreign-trained doctors"];
+
+        // Format the data: Convert string to numbers and calculate the total
+        data.forEach(d => {
+            keys.forEach(key => {
+                d[key] = +d[key];  // Convert to number
+            });
+            nurseKeys.forEach(key => {
+                d[key] = +d[key];  // Convert to number
+            });
+            doctorKeys.forEach(key => {
+                d[key] = +d[key];  // Convert to number
+            });
+            d.total = keys.reduce((sum, key) => sum + d[key], 0);  // Calculate the total
+        });
+
+        // Set the domains for the scales based on data
+        x.domain(data.map(d => d.Years));
+        y.domain([0, d3.max(data, d => d.total)]).nice();
+        color.domain(keys);
+
+        // Add the x-axis
+        g.append("g")
+            .attr("class", "axis axis--x")
+            .attr("transform", `translate(0,${height})`)
+            .call(d3.axisBottom(x))
+            .append("text")
+            .attr("x", width / 2)
+            .attr("y", margin.bottom - 10)
+            .attr("fill", "#000")
+            .attr("font-weight", "bold")
+            .attr("text-anchor", "middle")
+            .text("Years");
+
+        // Add the y-axis
+        g.append("g")
+            .attr("class", "axis axis--y")
+            .call(d3.axisLeft(y).ticks(10).tickFormat(d3.format("d")))
+            .append("text")
+            .attr("transform", "rotate(-90)")
+            .attr("x", -height / 2)
+            .attr("y", -margin.left + 20)
+            .attr("dy", "0.71em")
+            .attr("fill", "#000")
+            .attr("font-weight", "bold")
+            .attr("text-anchor", "middle")
+            .text("Number of Individuals");
+
+        // Add the legend
+        const legend = g.append("g")
+            .attr("font-family", "sans-serif")
+            .attr("font-size", 10)
+            .attr("text-anchor", "end")
+            .selectAll("g")
+            .data(keys.slice().reverse())
+            .enter().append("g")
+            .attr("transform", (d, i) => `translate(0,${i * 20})`)
+            .on("click", function(event, d) {
+                if (activeKeys.includes(d)) {
+                    activeKeys = activeKeys.filter(key => key !== d);  // Remove from active keys
+                } else {
+                    activeKeys.push(d);  // Add to active keys
+                }
+                renderBars(data);  // Re-render the bars
+            });
+
+        legend.append("rect")
+            .attr("x", width + 115)
+            .attr("width", 20)
+            .attr("height", 20)
+            .attr("fill", color)
+            .attr("class", "legend-rect");
+
+        legend.append("text")
+            .attr("x", width + 110)
+            .attr("y", 9.5)
+            .attr("dy", "0.32em")
+            .text(d => d);
+
+        // Initial render of the bar chart
+        renderBars(data);
+
+        // Tooltip for showing additional information
+        const tooltip = d3.select("#tooltip");
+        const pie = d3.pie().sort(null).value(d => d.value);  // Create pie layout
+        const arc = d3.arc().outerRadius(80).innerRadius(40);  // Define arc generator
+        const donutColor = d3.scaleOrdinal(["#7b0099", "#9933cc", "#b366ff", "#cc99ff", "#e6ccff"]);
+
+        // Function to show tooltip with donut chart
+        function showTooltip(event, d, key) {
+            const pieData = (key === "Total of nurses") ? nurseKeys : doctorKeys;
+            const pieValues = pieData.map(k => ({ key: k, value: d.data[k] }));
+            const arcs = pie(pieValues);
+
+            const tooltipSvg = tooltip.select("svg");
+            tooltipSvg.selectAll("*").remove();
+
+            const g = tooltipSvg.append("g")
+                .attr("transform", `translate(125, 100)`);
+
+            // Add arcs (donut slices) to the tooltip
+            g.selectAll("path")
+                .data(arcs)
+                .enter().append("path")
+                .attr("d", arc)
+                .attr("fill", d => donutColor(d.data.key));
+
+            // Add labels to the arcs
+            g.selectAll("text")
+                .data(arcs)
+                .enter().append("text")
+                .attr("transform", d => `translate(${arc.centroid(d)})`)
+                .attr("dy", "0.35em")
+                .attr("text-anchor", "middle")
+                .text(d => `${Math.round(d.data.value / d3.sum(pieValues, d => d.value) * 100)}%`);
+
+            // Add legend to the tooltip
+            const legend = tooltipSvg.append("g")
+                .attr("class", "legend")
+                .attr("transform", "translate(0,200)");
+
+            legend.selectAll("rect")
+                .data(arcs)
+                .enter().append("rect")
+                .attr("x", 0)
+                .attr("y", (d, i) => i * 20)
+                .attr("width", 18)
+                .attr("height", 18)
+                .attr("fill", d => donutColor(d.data.key));
+
+            legend.selectAll("text")
+                .data(arcs)
+                .enter().append("text")
+                .attr("x", 24)
+                .attr("y", (d, i) => i * 20 + 9)
+                .attr("dy", ".35em")
+                .text(d => `${d.data.key}: ${d.data.value}`);
+
+            // Position and show the tooltip
+            tooltip.style("left", (event.pageX + 5) + "px")
+                .style("top", (event.pageY - 28) + "px")
+                .style("display", "block");
+        }
+
+        // Function to hide the tooltip
+        function hideTooltip() {
+            tooltip.style("display", "none");
+        }
+
+        // Render the bar chart with the provided data
+        function renderBars(data) {
+            const stack = d3.stack().keys(activeKeys);  // Stack layout for the active keys
+            const layers = stack(data);
+
+            // Remove existing bars before re-rendering
+            g.selectAll(".layer").remove();
+
+            // Add new bars
+            const bars = g.selectAll(".layer")
+                .data(layers)
+                .enter().append("g")
+                .attr("class", "layer")
+                .attr("fill", d => color(d.key));
+
+            bars.selectAll("rect")
+                .data(d => d)
+                .enter().append("rect")
+                .attr("x", d => x(d.data.Years))
+                .attr("y", height)
+                .attr("height", 0)
+                .attr("width", x.bandwidth())
+                .on("mouseover", function(event, d) {
+                    const key = d3.select(this.parentNode).datum().key;
+                    showTooltip(event, d, key);  // Show tooltip on mouseover
+                })
+                .on("mousemove", function(event, d) {
+                    const key = d3.select(this.parentNode).datum().key;
+                    showTooltip(event, d, key);  // Update tooltip position on mousemove
+                })
+                .on("mouseout", hideTooltip)  // Hide tooltip on mouseout
+                .transition()
+                .duration(750)
+                .attr("y", d => y(d[1]))
+                .attr("height", d => y(d[0]) - y(d[1]));
+
+            // Update the axes with transition
+            g.select(".axis--x")
+                .transition()
+                .duration(750)
+                .call(d3.axisBottom(x));
+            g.select(".axis--y")
+                .transition()
+                .duration(750)
+                .call(d3.axisLeft(y).ticks(10).tickFormat(d3.format("d")));
+        }
+
+        // Function to sort the data by total
+        function sortData() {
+            ascending = !ascending;  // Toggle sorting order
+            dataGlobal.sort((a, b) => ascending ? a.total - b.total : b.total - a.total);  // Sort data
+            x.domain(dataGlobal.map(d => d.Years));  // Update x domain
+            renderBars(dataGlobal);  // Re-render bars
+        }
+
+        // Function to export data as CSV
+        function exportData() {
+            const headers = Object.keys(dataGlobal[0]);
+            const csvData = [
+                headers.join(','),  // Add headers
+                ...dataGlobal.map(row => headers.map(header => row[header]).join(','))  // Add rows
+            ];
+            const csvContent = csvData.join('\n');
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement("a");
+            if (link.download !== undefined) {
+                const url = URL.createObjectURL(blob);
+                link.setAttribute("href", url);
+                link.setAttribute("download", "data.csv");
+                link.style.visibility = 'hidden';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            }
+        }
+
+        // Function to save the chart as an image
+        function saveChart() {
+            const svgString = new XMLSerializer().serializeToString(svg.node());  // Serialize SVG to string
+            const canvas = document.createElement("canvas");
+            const context = canvas.getContext("2d");
+            const img = new Image();
+            img.onload = function() {
+                canvas.width = svg.attr("width");
+                canvas.height = svg.attr("height");
+                context.drawImage(img, 0, 0);
+                const a = document.createElement("a");
+                a.download = "chart.png";
+                a.href = canvas.toDataURL("image/png");
+                a.click();  // Trigger download
+            };
+            img.src = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svgString)));  // Encode SVG string to base64
+        }
+
+        // Function to filter data by selected years
+        function filterData() {
+            const selectedYears = Array.from(document.querySelectorAll('.year-filter:checked')).map(input => input.value);
+            const filteredData = dataGlobal.filter(d => selectedYears.includes(d.Years));
+            x.domain(filteredData.map(d => d.Years));  // Update x domain with filtered data
+            y.domain([0, d3.max(filteredData, d => d.total)]).nice();  // Update y domain with new maximum value
+            renderBars(filteredData);  // Re-render bars with filtered data
+        }
+
+        // Event listeners for buttons
+        d3.select("#sort-total").on("click", sortData);
+        d3.select("#export-data").on("click", exportData);
+        d3.select("#save-chart").on("click", saveChart);
+        d3.selectAll(".year-filter").on("change", filterData);
+    });
+
+    // Navigation function for dataset button
+    function navigateToDataset() {
+        window.location.href = "doctor_nurse_2.html";
+    }
+
+    function navigateToHomepage() {
+        window.location.href = "homepage.html";
+    }
+</script>
+<p>The stacked bar chart depicts the total number of doctors and nurses from 2012 to 2021. Each bar illustrates the distribution between doctors and nurses, while hovering over a segment displays a donut chart. These donut charts provide a detailed breakdown of the proportions of domestically trained and foreign-trained professionals, offering insights into the composition of the healthcare workforce over the years.</p>
+<footer style="margin-top: 20px; text-align: center;">COS30045 Data Visualisation</footer>
+</body>
+</html>
